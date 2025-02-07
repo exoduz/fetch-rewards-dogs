@@ -8,15 +8,37 @@ const Search: React.FC = () => {
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [breeds, setBreeds] = useState<string[]>([]);
   const [selectedBreed, setSelectedBreed] = useState<string>("");
-  const [page, setPage] = useState(0);
+  const [previousPage, setPreviousPage] = useState("");
+  const [nextPage, setNextPage] = useState("");
+  const [subsequentPage, setSubsequentPage] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [matchedDog, setMatchedDog] = useState<Dog | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [favoritesLoading, setFavoritesLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const result = await fetchDogs(
+          selectedBreed,
+          subsequentPage,
+          sortOrder
+        );
+        setDogs(result.dogs);
+        setPreviousPage(result.prev || "");
+        setNextPage(result.next || "");
+      } catch (error) {
+        console.error("Error fetching dogs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchBreeds().then(setBreeds);
-    fetchDogs(selectedBreed, page, sortOrder).then(setDogs);
-  }, [selectedBreed, page, sortOrder]);
+    fetchData();
+  }, [selectedBreed, sortOrder, subsequentPage]);
 
   const toggleFavorite = (id: string) => {
     if (favorites.length === 0) {
@@ -30,13 +52,20 @@ const Search: React.FC = () => {
 
   const handleMatch = async () => {
     if (favorites.length === 0) return;
-    const matched = await fetchMatch(favorites);
-    setMatchedDog(matched);
+    setFavoritesLoading(true);
+    try {
+      const matched = await fetchMatch(favorites);
+      setMatchedDog(matched);
+    } catch (error) {
+      console.error("Error fetching match:", error);
+    } finally {
+      setFavoritesLoading(false);
+    }
   };
 
   return (
     <div className="container mx-auto p-4">
-      {/* Logout Button Aligned Right */}
+      {/* Logout Button */}
       <div className="flex justify-end mb-4">
         <button
           className="bg-gray-300 text-black px-4 py-2 rounded"
@@ -52,7 +81,10 @@ const Search: React.FC = () => {
         <div className="flex items-center gap-4">
           <select
             className="border p-2 rounded"
-            onChange={(e) => setSelectedBreed(e.target.value)}
+            onChange={(e) => {
+              setSelectedBreed(e.target.value);
+              setSubsequentPage("");
+            }}
           >
             <option value="">All Breeds</option>
             {breeds.map((breed) => (
@@ -70,45 +102,64 @@ const Search: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Layout - 2/3 for Search, 1/3 for Match */}
+      {/* Main Layout */}
       <div className="flex gap-6">
-        {/* Search Section - 2/3 width */}
+        {/* Search Section */}
         <div className="w-2/3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {dogs.map((dog) => (
-              <DogCard
-                key={dog.id}
-                dog={dog}
-                isFavorite={favorites.includes(dog.id)}
-                toggleFavorite={toggleFavorite}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between mt-4">
-            <button
-              className="bg-gray-300 px-4 py-2 rounded"
-              onClick={() => setPage(page - 1)}
-              disabled={page === 0}
-            >
-              Previous
-            </button>
-            <button
-              className="bg-gray-300 px-4 py-2 rounded"
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </button>
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {dogs.map((dog) => (
+                <DogCard
+                  key={dog.id}
+                  dog={dog}
+                  isFavorite={favorites.includes(dog.id)}
+                  toggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
+          )}
+          <div className="flex mt-4">
+            {previousPage && (
+              <button
+                className="bg-gray-300 px-4 py-2 rounded text-black mr-4"
+                onClick={() => setSubsequentPage(previousPage)}
+                disabled={loading}
+              >
+                Previous
+              </button>
+            )}
+            {nextPage && (
+              <button
+                className="bg-gray-300 px-4 py-2 rounded text-black"
+                onClick={() => setSubsequentPage(nextPage)}
+                disabled={loading}
+              >
+                Next
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Match Section - 1/3 width */}
+        {/* Match Section */}
         <div className="w-1/3 flex flex-col items-center">
           {favorites.length > 0 && (
             <button
-              className="bg-blue-500 text-black px-4 py-2 rounded mb-4"
+              className="bg-blue-500 text-black px-4 py-2 rounded mb-4 flex items-center justify-center"
               onClick={handleMatch}
+              disabled={loading}
             >
-              Find My Match
+              {favoritesLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-blue-600 mr-2"></div>
+                  Finding Match...
+                </>
+              ) : (
+                "Find My Match"
+              )}
             </button>
           )}
           {favorites.length > 0 && matchedDog && (
@@ -120,7 +171,6 @@ const Search: React.FC = () => {
                 dog={matchedDog}
                 isFavorite={false}
                 showFavorite={false}
-                toggleFavorite={() => {}}
               />
             </div>
           )}

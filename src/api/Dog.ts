@@ -1,5 +1,12 @@
 import type { Dog } from "../components/DogCard";
 
+export type DogSearchResult = {
+  dogs: Dog[];
+  total: number;
+  next: string | null;
+  prev: string | null;
+};
+
 export const fetchBreeds = async (): Promise<string[]> => {
   const response = await fetch(
     "https://frontend-take-home-service.fetch.com/dogs/breeds",
@@ -12,44 +19,48 @@ export const fetchBreeds = async (): Promise<string[]> => {
 
 export const fetchDogs = async (
   selectedBreed: string,
-  page: number,
+  subsequentPage: string | null,
   sortOrder: "asc" | "desc"
-): Promise<Dog[]> => {
-  const queryParams = new URLSearchParams({
-    size: "10",
-    from: (page * 10).toString(),
+): Promise<DogSearchResult> => {
+  const baseUrl = "https://frontend-take-home-service.fetch.com";
+  let url = "";
+
+  if (subsequentPage) {
+    url = `${baseUrl}${subsequentPage}`;
+  } else {
+    const queryParams = new URLSearchParams({
+      size: "10",
+      from: "0",
+      sort: selectedBreed ? `name:${sortOrder}` : `breed:${sortOrder}`,
+    });
+
+    if (selectedBreed) {
+      queryParams.set("breeds", selectedBreed);
+    }
+
+    url = `${baseUrl}/dogs/search?${queryParams}`;
+  }
+
+  const response = await fetch(url, {
+    credentials: "include",
   });
 
-  if (selectedBreed) {
-    queryParams.set("breeds", selectedBreed);
-    queryParams.set("sort", `name:${sortOrder}`); // Sort by name when a breed is selected
-  } else {
-    queryParams.set("sort", `breed:${sortOrder}`); // Sort by breed first, then name
-  }
+  const { resultIds, total, next, prev } = await response.json();
+  const dogs = resultIds.length ? await fetchDogDetails(resultIds) : [];
+  return { dogs, total, next, prev };
+};
 
+const fetchDogDetails = async (dogIds: string[]): Promise<Dog[]> => {
   const response = await fetch(
-    `https://frontend-take-home-service.fetch.com/dogs/search?${queryParams}`,
+    "https://frontend-take-home-service.fetch.com/dogs",
     {
+      method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dogIds),
     }
   );
-
-  const { resultIds } = await response.json();
-
-  if (resultIds.length) {
-    const dogResponse = await fetch(
-      "https://frontend-take-home-service.fetch.com/dogs",
-      {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(resultIds),
-      }
-    );
-    return dogResponse.json();
-  }
-
-  return [];
+  return response.json();
 };
 
 export const fetchMatch = async (

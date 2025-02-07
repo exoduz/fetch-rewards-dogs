@@ -13,8 +13,8 @@ const DogCard: React.FC<{
   dog: Dog;
   isFavorite: boolean;
   showFavorite?: boolean;
-  toggleFavorite: (id: string) => void;
-}> = ({ dog, isFavorite, showFavorite = true, toggleFavorite }) => {
+  toggleFavorite?: (id: string) => void;
+}> = ({ dog, isFavorite, showFavorite = true, toggleFavorite = () => {} }) => {
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       <img className="w-full h-48 object-cover" src={dog.img} alt={dog.name} />
