@@ -6,7 +6,11 @@ import Search from "./pages/Search";
 const App: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
-  return isAuthenticated ? <Search /> : <Login />;
+  return (
+    <div className="w-full h-screen">
+      {isAuthenticated ? <Search /> : <Login />}
+    </div>
+  );
 };
 
 export default App;

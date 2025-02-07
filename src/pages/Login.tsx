@@ -18,38 +18,44 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="bg-red-500 min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Login</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+    <div className="w-full h-screen flex justify-center items-center bg-gray-100">
+      <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-6">
+        <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col">
+            <label className="font-medium text-gray-700" htmlFor="name">
+              Name
+            </label>
             <input
+              id="name"
+              className="border border-gray-300 p-2 rounded text-black"
               type="text"
-              placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full p-2 border border-gray-300 rounded-md"
             />
           </div>
-          <div className="mb-4">
+          <div className="flex flex-col">
+            <label className="font-medium text-gray-700" htmlFor="email">
+              Email
+            </label>
             <input
+              id="email"
+              className="border border-gray-300 p-2 rounded text-black"
               type="email"
-              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full p-2 border border-gray-300 rounded-md"
             />
           </div>
           <button
+            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
             type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
           >
             Login
           </button>
         </form>
-        {error && <p className="text-red-500 text-center mt-4">{error}</p>}
+        {error && <p className="text-red-500 mt-2 text-center">{error}</p>}
       </div>
     </div>
   );
